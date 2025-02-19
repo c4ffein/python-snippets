@@ -75,6 +75,7 @@ def start_worker_thread(func):
                     if e.args == (1, "[SSL: SSLV3_ALERT_BAD_CERTIFICATE] sslv3 alert bad certificate (_ssl.c:1129)"):
                         break  # It is expected that the client may try to reach us with a missing CA
                     raise e
+
     return wrapper
 
 
@@ -110,7 +111,7 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
-                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
+                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev"):
                     pass
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
@@ -125,7 +126,7 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
-                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
+                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev"):
                     pass
         self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
 
@@ -136,7 +137,7 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
-                with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as secure_client_socket:
+                with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev"):
                     pass
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
@@ -204,12 +205,12 @@ class PinnedSSLTest(TestCase):
                 self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
 
     @start_worker_thread
-    def test_context_that_connects_without_ca_will_fail(self):
+    def test_context_that_connects_ex_without_ca_will_fail(self):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
-                    secure_client_socket.connect((HOST, PORT))
+                    secure_client_socket.connect_ex((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
             "unable to get local issuer certificate (_ssl.c:1129)"

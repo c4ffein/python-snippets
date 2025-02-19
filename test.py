@@ -113,7 +113,7 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
-                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                     pass
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
@@ -128,7 +128,7 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
-                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                     pass
         self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
 
@@ -139,7 +139,7 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
-                with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as ssock:
+                with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as secure_client_socket:
                     pass
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
@@ -153,18 +153,18 @@ class PinnedSSLTest(TestCase):
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
-            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
-                ssock.sendall(b"Hello, server!")
-                data = ssock.recv(1024)
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
+                secure_client_socket.sendall(b"Hello, server!")
+                data = secure_client_socket.recv(1024)
                 self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
 
     @start_worker_thread
     def test_context_that_connects_without_ca_will_fail(self):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
-                    ssock.connect((HOST, PORT))
+                    secure_client_socket.connect((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
             "unable to get local issuer certificate (_ssl.c:1129)"
@@ -176,9 +176,9 @@ class PinnedSSLTest(TestCase):
         context = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
-                    ssock.connect((HOST, PORT))
+                    secure_client_socket.connect((HOST, PORT))
         self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
 
     @start_worker_thread
@@ -186,9 +186,9 @@ class PinnedSSLTest(TestCase):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as ssock:
+            with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
-                    ssock.connect((HOST, PORT))
+                    secure_client_socket.connect((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
             "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
@@ -200,19 +200,19 @@ class PinnedSSLTest(TestCase):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
-                ssock.connect((HOST, PORT))
-                ssock.sendall(b"Hello, server!")
-                data = ssock.recv(1024)
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
+                secure_client_socket.connect((HOST, PORT))
+                secure_client_socket.sendall(b"Hello, server!")
+                data = secure_client_socket.recv(1024)
                 self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
 
     @start_worker_thread
     def test_context_that_connects_without_ca_will_fail(self):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
-                    ssock.connect((HOST, PORT))
+                    secure_client_socket.connect((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
             "unable to get local issuer certificate (_ssl.c:1129)"
@@ -224,9 +224,9 @@ class PinnedSSLTest(TestCase):
         context = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
-                    ssock.connect_ex((HOST, PORT))
+                    secure_client_socket.connect_ex((HOST, PORT))
         self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
 
     @start_worker_thread
@@ -234,9 +234,9 @@ class PinnedSSLTest(TestCase):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as ssock:
+            with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
-                    ssock.connect_ex((HOST, PORT))
+                    secure_client_socket.connect_ex((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
             "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
@@ -248,10 +248,10 @@ class PinnedSSLTest(TestCase):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
-                ssock.connect_ex((HOST, PORT))
-                ssock.sendall(b"Hello, server!")
-                data = ssock.recv(1024)
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
+                secure_client_socket.connect_ex((HOST, PORT))
+                secure_client_socket.sendall(b"Hello, server!")
+                data = secure_client_socket.recv(1024)
                 self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
 
 

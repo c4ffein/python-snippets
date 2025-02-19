@@ -54,8 +54,13 @@ def make_pinned_ssl_context(pinned_sha_256):
                 server_hostname=server_hostname,
                 session=session,
             )
-            ws.check_pinned_cert()
+            try:
+                ws.check_pinned_cert()
+            except Exception as e:
+                ws.close()
+                raise e
             return ws
+
 
     def create_pinned_default_context(purpose=Purpose.SERVER_AUTH, *, cafile=None, capath=None, cadata=None):
         if not isinstance(purpose, _ASN1Object):

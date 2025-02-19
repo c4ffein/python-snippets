@@ -66,8 +66,9 @@ def start_worker_thread(func):
                         conn, certfile='certs/server.crt', keyfile='certs/server.key', server_side=True
                     )
                     handle_secure_connection(secure_conn)
+                    secure_conn.close()
                 except socket.timeout:
-                    pass
+                    secure_conn.close()  # may be useless for now
     return wrapper
 
 
@@ -120,8 +121,6 @@ class PinnedSSLTest(TestCase):
                 ssock.sendall(b'Hello, server!')
                 data = ssock.recv(1024)
                 # TODO : Check data
-                ssock.close()
-                return
 
 
     ####def test_check_is_called_if_connecting_on_new_socket(self):

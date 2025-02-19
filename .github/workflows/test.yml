@@ -23,6 +23,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install Container Dependencies
       run: |  # Needed since that specific container misses it
+        apt-get update
         apt-get install build-essential -y
     - name: Install Python Dependencies
       run: |  # Runs as root since we are in a specific container as a dirty fix

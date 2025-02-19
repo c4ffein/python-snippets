@@ -3,7 +3,7 @@ from unittest import TestCase, mock
 from unittest import main as unittest_main
 from unittest.mock import patch
 from time import sleep
-import ssl
+from ssl import SSLError, wrap_socket
 import socket
 import sys
 from threading import Thread
@@ -62,21 +62,26 @@ def start_worker_thread(func):
                     break
                 try:
                     conn, addr = sock.accept()
-                    secure_conn = ssl.wrap_socket(
-                        conn, certfile='certs/server.crt', keyfile='certs/server.key', server_side=True
+                    secure_conn = wrap_socket(
+                        conn, certfile="certs/server.crt", keyfile="certs/server.key", server_side=True
                     )
                     handle_secure_connection(secure_conn)
                     secure_conn.close()
                 except socket.timeout:
-                    secure_conn.close()  # may be useless for now
+                    secure_conn.close()  # May be useless for now
+                except SSLError as e:
+                    if e.args == (1, "[SSL: TLSV1_ALERT_UNKNOWN_CA] tlsv1 alert unknown ca (_ssl.c:1129)"):
+                        break  # It is expected that the client may try to reach us with a missing CA
+                    if e.args == (1, "[SSL: SSLV3_ALERT_BAD_CERTIFICATE] sslv3 alert bad certificate (_ssl.c:1129)"):
+                        break  # It is expected that the client may try to reach us with a missing CA
+                    raise e
     return wrapper
 
 
 def handle_secure_connection(conn):
     try:
         data = conn.recv(1024)
-        # TODO : assert on data?
-        conn.sendall(b'HTTP/1.0 200 OK\r\n\r\nHello, World!')
+        conn.sendall(b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
     except:
         pass
 
@@ -101,32 +106,58 @@ class PinnedSSLTest(TestCase):
         self.assertEqual(e.exception.args, ("Incorrect certificate checksum",))
 
     @start_worker_thread
-    def test_will_fail_if_already_opened_socket_gets_wrapped_with_incorrect_checksum(self):
-        context = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
-        context.load_verify_locations(cafile='certs/root_ca.crt')  # TODO : AND WITHOUT
+    def test_will_fail_if_already_opened_socket_gets_wrapped_without_ca(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
-                with context.wrap_socket(client_socket, server_hostname='fake.c4ffein.dev') as ssock:  # TODO : FAIL IF WRONG NAME
+                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
                     pass
-        self.assertEqual(ec.exception.args, ('Incorrect certificate checksum',))
+        expected_ssl_error_str = (
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+            "unable to get local issuer certificate (_ssl.c:1129)"
+        )
+        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
 
     @start_worker_thread
-    def test_will_work_if_already_opened_socket_gets_wrapped_with_correct_checksum(self):
-        context = make_pinned_ssl_context('f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b')
-        context.load_verify_locations(cafile='certs/root_ca.crt')  # TODO : AND WITHOUT
+    def test_will_fail_if_already_opened_socket_gets_wrapped_with_incorrect_checksum(self):
+        context = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
-            with context.wrap_socket(client_socket, server_hostname='fake.c4ffein.dev') as ssock:  # TODO : FAIL IF WRONG NAME
-                ssock.sendall(b'Hello, server!')
+            with self.assertRaises(Exception) as ec:
+                with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                    pass
+        self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
+
+    @start_worker_thread
+    def test_will_fail_if_already_opened_socket_gets_wrapped_with_an_incorrect_server_hostname(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            client_socket.connect((HOST, PORT))
+            with self.assertRaises(Exception) as ec:
+                with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as ssock:
+                    pass
+
+    @start_worker_thread
+    def test_will_work_if_already_opened_socket_gets_wrapped_with_correct_infos(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            client_socket.connect((HOST, PORT))
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                ssock.sendall(b"Hello, server!")
                 data = ssock.recv(1024)
-                # TODO : Check data
+                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
 
 
     ####def test_check_is_called_if_connecting_on_new_socket(self):
+    # TODO : For all related tests
     ####    raise Exception("TODO")
 
     ####def test_called_with_correct_params_so_that_regular_verif_and_so_getpeercert_is_enough(self):
+    # TODO : For all related tests
     ####    raise Exception("TODO")
 
 

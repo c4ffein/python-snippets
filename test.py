@@ -29,7 +29,7 @@ from unittest.mock import patch
 
 from src.pinned_ssl_context import make_pinned_ssl_context
 
-HOST, PORT = "localhost", 8888
+HOST, PORT = "127.0.0.1", 8888
 
 
 def start_worker_thread(func):

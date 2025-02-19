@@ -22,6 +22,7 @@ def make_pinned_ssl_context(pinned_sha_256):
     Tested with `python-version: [3.8, 3.9, 3.10, 3.11, 3.12, 3.13]`
     Original code can be found at https://github.com/c4ffein/python-snippets
     """
+
     class PinnedSSLSocket(SSLSocket):
         def check_pinned_cert(self):
             der_cert_bin = self.getpeercert(True)

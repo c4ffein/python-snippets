@@ -19,16 +19,13 @@ How to create the certificates for testing:
   - server: use `server.crt` and `server.key`
 """
 
-
-from socket import socketpair, create_connection
-from unittest import TestCase, mock
+import socket
+from ssl import SSLError, wrap_socket
+from threading import Thread
+from time import sleep
+from unittest import TestCase
 from unittest import main as unittest_main
 from unittest.mock import patch
-from time import sleep
-from ssl import SSLError, wrap_socket
-import socket
-import sys
-from threading import Thread
 
 from src.pinned_ssl_context import make_pinned_ssl_context
 

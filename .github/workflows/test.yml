@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: ubuntu  # Needed to start on another container where localhost is accessible for tests...
     strategy:
       max-parallel: 4
       matrix:

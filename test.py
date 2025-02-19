@@ -83,7 +83,7 @@ def handle_secure_connection(conn):
     try:
         data = conn.recv(1024)
         conn.sendall(b"HTTP/1.0 200 OK\r\n\r\nHello, Client! Answering: '" + data + b"'")
-    except:
+    except Exception:
         pass
 
 

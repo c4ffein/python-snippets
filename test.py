@@ -3,7 +3,7 @@ How to create the certificates for testing:
 - Create a Self-Signed Root Certificate Authority (CA)
   ```
   openssl req -x509 -newkey rsa:4096 -keyout root_ca.key -out root_ca.crt -days 3650 -nodes \
-    -subj "/C=US/ST=State/L=City/O=Organization/CN=FakeRoot"
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=FakeRoot" -addext "keyUsage=critical,digitalSignature,keyCertSign"
   ```
 - Create a Server Certificate Signing Request (CSR) for your server certificate
   ```
@@ -107,7 +107,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_already_opened_socket_that_gets_wrapped_without_ca_will_fail(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with self.assertRaises(Exception) as ec:
@@ -132,7 +132,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_already_opened_socket_that_gets_wrapped_with_an_incorrect_server_hostname_will_fail(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
@@ -148,7 +148,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_already_opened_socket_that_gets_wrapped_with_correct_infos_will_work(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
@@ -159,7 +159,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_context_that_connects_without_ca_will_fail(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
@@ -182,7 +182,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_context_that_connects_with_an_incorrect_server_hostname_will_fail(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as secure_client_socket:
@@ -197,7 +197,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_context_that_connects_with_correct_infos_will_work(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
@@ -208,7 +208,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_context_that_connects_ex_without_ca_will_fail(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 with self.assertRaises(Exception) as ec:
@@ -231,7 +231,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_context_that_connects_ex_with_an_incorrect_server_hostname_will_fail(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as secure_client_socket:
@@ -246,7 +246,7 @@ class PinnedSSLTest(TestCase):
 
     @start_worker_thread
     def test_context_that_connects_ex_with_correct_infos_will_work(self):
-        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context = make_pinned_ssl_context("30152bbe563ad828f53944fcbfe8851afc620943f8b97228cb16822636a786b6")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:

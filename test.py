@@ -82,7 +82,7 @@ def start_worker_thread(func):
 def handle_secure_connection(conn):
     try:
         data = conn.recv(1024)
-        conn.sendall(b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
+        conn.sendall(b"HTTP/1.0 200 OK\r\n\r\nHello, Client! Answering: '" + data + b"'")
     except:
         pass
 
@@ -152,9 +152,9 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
-                secure_client_socket.sendall(b"Hello, server!")
+                secure_client_socket.sendall(b"Hello, Server!")
                 data = secure_client_socket.recv(1024)
-                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
+                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, Client! Answering: 'Hello, Server!'")
 
     @start_worker_thread
     def test_context_that_connects_without_ca_will_fail(self):
@@ -200,9 +200,9 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 secure_client_socket.connect((HOST, PORT))
-                secure_client_socket.sendall(b"Hello, server!")
+                secure_client_socket.sendall(b"Hello, Server!")
                 data = secure_client_socket.recv(1024)
-                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
+                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, Client! Answering: 'Hello, Server!'")
 
     @start_worker_thread
     def test_context_that_connects_ex_without_ca_will_fail(self):
@@ -248,9 +248,9 @@ class PinnedSSLTest(TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as secure_client_socket:
                 secure_client_socket.connect_ex((HOST, PORT))
-                secure_client_socket.sendall(b"Hello, server!")
+                secure_client_socket.sendall(b"Hello, Server!")
                 data = secure_client_socket.recv(1024)
-                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
+                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, Client! Answering: 'Hello, Server!'")
 
 
 if __name__ == "__main__":

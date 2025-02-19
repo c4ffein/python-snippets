@@ -87,7 +87,6 @@ def handle_secure_connection(conn):
 
 
 class PinnedSSLTest(TestCase):
-    # TODO : Move in specific repo, bind bank/ai
     @patch("ssl.SSLSocket.getpeercert")
     def test_those_works_if_we_create_2_contexts_with_2_different_certificates(self, mocked_getpeercert):
         context_a = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")

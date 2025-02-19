@@ -6,6 +6,7 @@ from ssl import (
     PROTOCOL_TLS_CLIENT,
     PROTOCOL_TLS_SERVER,
     Purpose,
+    SSLCertVerificationError,
     SSLContext,
     SSLSocket,
     _ASN1Object,
@@ -15,14 +16,17 @@ from sys import flags as sys_flags
 
 
 def make_pinned_ssl_context(pinned_sha_256):
+    """
+    Tested with `python-version: [3.8, 3.9, 3.10, 3.11, 3.12, 3.13]`
+    """
     # TODO Document
     # TODO Explain can be found here
     # TODO Copy
     class PinnedSSLSocket(SSLSocket):
         def check_pinned_cert(self):
             der_cert_bin = self.getpeercert(True)
-            if sha256(der_cert_bin).hexdigest() != pinned_sha_256:  # TODO : Check this is enough
-                raise Exception("Incorrect certificate checksum")  # TODO : Better
+            if sha256(der_cert_bin).hexdigest() != pinned_sha_256:
+                raise SSLCertVerificationError("Incorrect certificate checksum")
 
         def connect(self, addr):  # Needed for when the context creates a new connection
             r = super().connect(addr)

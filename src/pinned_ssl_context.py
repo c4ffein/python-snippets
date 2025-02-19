@@ -28,43 +28,13 @@ def make_pinned_ssl_context(pinned_sha_256):
             if sha256(der_cert_bin).hexdigest() != pinned_sha_256:
                 raise SSLCertVerificationError("Incorrect certificate checksum")
 
-        def connect(self, addr):  # Needed for when the context creates a new connection
-            r = super().connect(addr)
-            self.check_pinned_cert()
-            return r
-
-        def connect_ex(self, addr):  # Needed for when the context creates a new connection
-            r = super().connect_ex(addr)
+        def do_handshake(self, *args, **kwargs):
+            r = super().do_handshake(*args, **kwargs)
             self.check_pinned_cert()
             return r
 
     class PinnedSSLContext(SSLContext):
         sslsocket_class = PinnedSSLSocket
-
-        def wrap_socket(  # Needed for when we wrap an exising socket
-            self,
-            sock,
-            server_side=False,
-            do_handshake_on_connect=True,
-            suppress_ragged_eofs=True,
-            server_hostname=None,
-            session=None,
-        ):
-            ws = super().wrap_socket(
-                sock,
-                server_side=server_side,
-                do_handshake_on_connect=do_handshake_on_connect,
-                suppress_ragged_eofs=suppress_ragged_eofs,
-                server_hostname=server_hostname,
-                session=session,
-            )
-            try:
-                ws.check_pinned_cert()
-            except Exception as e:
-                ws.close()
-                raise e
-            return ws
-
 
     def create_pinned_default_context(purpose=Purpose.SERVER_AUTH, *, cafile=None, capath=None, cadata=None):
         if not isinstance(purpose, _ASN1Object):

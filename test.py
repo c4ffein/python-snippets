@@ -62,6 +62,9 @@ def start_worker_thread(func):
                     break
                 try:
                     conn, addr = sock.accept()
+                except socket.timeout:
+                    break
+                try:
                     secure_conn = wrap_socket(
                         conn, certfile="certs/server.crt", keyfile="certs/server.key", server_side=True
                     )
@@ -88,7 +91,7 @@ def handle_secure_connection(conn):
 
 class PinnedSSLTest(TestCase):
     @patch("ssl.SSLSocket.getpeercert")
-    def test_those_works_if_we_create_2_contexts_with_2_different_certificates(self, mocked_getpeercert):
+    def test_multiple_contexts_correctly_store_different_certificates(self, mocked_getpeercert):
         context_a = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
         context_b = make_pinned_ssl_context("960284fdd51e3651b8ae998cfc82ed2104ee306d3f8ca2f066c4a7b76a47430f")
         mocked_getpeercert.return_value = b"checksum_a"
@@ -105,7 +108,7 @@ class PinnedSSLTest(TestCase):
         self.assertEqual(e.exception.args, ("Incorrect certificate checksum",))
 
     @start_worker_thread
-    def test_will_fail_if_already_opened_socket_gets_wrapped_without_ca(self):
+    def test_already_opened_socket_that_gets_wrapped_without_ca_will_fail(self):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.connect((HOST, PORT))
@@ -119,7 +122,7 @@ class PinnedSSLTest(TestCase):
         self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
 
     @start_worker_thread
-    def test_will_fail_if_already_opened_socket_gets_wrapped_with_incorrect_checksum(self):
+    def test_already_opened_socket_that_gets_wrapped_with_incorrect_checksum_will_fail(self):
         context = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -130,7 +133,7 @@ class PinnedSSLTest(TestCase):
         self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
 
     @start_worker_thread
-    def test_will_fail_if_already_opened_socket_gets_wrapped_with_an_incorrect_server_hostname(self):
+    def test_already_opened_socket_that_gets_wrapped_with_an_incorrect_server_hostname_will_fail(self):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -138,9 +141,14 @@ class PinnedSSLTest(TestCase):
             with self.assertRaises(Exception) as ec:
                 with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as ssock:
                     pass
+        expected_ssl_error_str = (
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
+        )
+        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
 
     @start_worker_thread
-    def test_will_work_if_already_opened_socket_gets_wrapped_with_correct_infos(self):
+    def test_already_opened_socket_that_gets_wrapped_with_correct_infos_will_work(self):
         context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
         context.load_verify_locations(cafile="certs/root_ca.crt")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -150,14 +158,101 @@ class PinnedSSLTest(TestCase):
                 data = ssock.recv(1024)
                 self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
 
+    @start_worker_thread
+    def test_context_that_connects_without_ca_will_fail(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                with self.assertRaises(Exception) as ec:
+                    ssock.connect((HOST, PORT))
+        expected_ssl_error_str = (
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+            "unable to get local issuer certificate (_ssl.c:1129)"
+        )
+        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
 
-    ####def test_check_is_called_if_connecting_on_new_socket(self):
-    # TODO : For all related tests
-    ####    raise Exception("TODO")
+    @start_worker_thread
+    def test_context_that_connects_with_incorrect_checksum_will_fail(self):
+        context = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                with self.assertRaises(Exception) as ec:
+                    ssock.connect((HOST, PORT))
+        self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
 
-    ####def test_called_with_correct_params_so_that_regular_verif_and_so_getpeercert_is_enough(self):
-    # TODO : For all related tests
-    ####    raise Exception("TODO")
+    @start_worker_thread
+    def test_context_that_connects_with_an_incorrect_server_hostname_will_fail(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as ssock:
+                with self.assertRaises(Exception) as ec:
+                    ssock.connect((HOST, PORT))
+        expected_ssl_error_str = (
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
+        )
+        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+
+    @start_worker_thread
+    def test_context_that_connects_with_correct_infos_will_work(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                ssock.connect((HOST, PORT))
+                ssock.sendall(b"Hello, server!")
+                data = ssock.recv(1024)
+                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
+
+    @start_worker_thread
+    def test_context_that_connects_without_ca_will_fail(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                with self.assertRaises(Exception) as ec:
+                    ssock.connect((HOST, PORT))
+        expected_ssl_error_str = (
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+            "unable to get local issuer certificate (_ssl.c:1129)"
+        )
+        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+
+    @start_worker_thread
+    def test_context_that_connects_ex_with_incorrect_checksum_will_fail(self):
+        context = make_pinned_ssl_context("d711a9468e2c4ee6ab4ea244afff8e24b8e8fdd2bdcfc98ce6e5bb9d43e17844")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                with self.assertRaises(Exception) as ec:
+                    ssock.connect_ex((HOST, PORT))
+        self.assertEqual(ec.exception.args, ("Incorrect certificate checksum",))
+
+    @start_worker_thread
+    def test_context_that_connects_ex_with_an_incorrect_server_hostname_will_fail(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="wrong.c4ffein.dev") as ssock:
+                with self.assertRaises(Exception) as ec:
+                    ssock.connect_ex((HOST, PORT))
+        expected_ssl_error_str = (
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
+        )
+        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+
+    @start_worker_thread
+    def test_context_that_connects_ex_with_correct_infos_will_work(self):
+        context = make_pinned_ssl_context("f300c720c0f6ecb18bb41bf7930346c660bb4b29a7089a3d2abb0f3ee9f12f5b")
+        context.load_verify_locations(cafile="certs/root_ca.crt")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev") as ssock:
+                ssock.connect_ex((HOST, PORT))
+                ssock.sendall(b"Hello, server!")
+                data = ssock.recv(1024)
+                self.assertEqual(data, b"HTTP/1.0 200 OK\r\n\r\nHello, World!")
 
 
 if __name__ == "__main__":

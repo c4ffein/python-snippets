@@ -114,8 +114,7 @@ class PinnedSSLTest(TestCase):
                 with context.wrap_socket(client_socket, server_hostname="fake.c4ffein.dev"):
                     pass
         expected_ssl_error_str = (
-            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "unable to get local issuer certificate ("
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate ("
         )
         self.assertEqual(ec.exception.args, (1, ANY))
         self.assertEqual(ec.exception.args[1][:100], expected_ssl_error_str)
@@ -166,8 +165,7 @@ class PinnedSSLTest(TestCase):
                 with self.assertRaises(Exception) as ec:
                     secure_client_socket.connect((HOST, PORT))
         expected_ssl_error_str = (
-            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "unable to get local issuer certificate ("
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate ("
         )
         self.assertEqual(ec.exception.args, (1, ANY))
         self.assertEqual(ec.exception.args[1][:100], expected_ssl_error_str)
@@ -216,8 +214,7 @@ class PinnedSSLTest(TestCase):
                 with self.assertRaises(Exception) as ec:
                     secure_client_socket.connect_ex((HOST, PORT))
         expected_ssl_error_str = (
-            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "unable to get local issuer certificate ("
+            "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate ("
         )
         self.assertEqual(ec.exception.args, (1, ANY))
         self.assertEqual(ec.exception.args[1][:100], expected_ssl_error_str)

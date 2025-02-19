@@ -25,7 +25,7 @@ from threading import Thread
 from time import sleep
 from unittest import TestCase
 from unittest import main as unittest_main
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from src.pinned_ssl_context import make_pinned_ssl_context
 
@@ -115,9 +115,10 @@ class PinnedSSLTest(TestCase):
                     pass
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "unable to get local issuer certificate (_ssl.c:1129)"
+            "unable to get local issuer certificate ("
         )
-        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+        self.assertEqual(ec.exception.args, (1, ANY))
+        self.assertEqual(ec.exception.args[1][:100], expected_ssl_error_str)
 
     @start_worker_thread
     def test_already_opened_socket_that_gets_wrapped_with_incorrect_checksum_will_fail(self):
@@ -141,9 +142,10 @@ class PinnedSSLTest(TestCase):
                     pass
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
+            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. ("
         )
-        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+        self.assertEqual(ec.exception.args, (1, ANY))
+        self.assertEqual(ec.exception.args[1][:130], expected_ssl_error_str)
 
     @start_worker_thread
     def test_already_opened_socket_that_gets_wrapped_with_correct_infos_will_work(self):
@@ -165,9 +167,10 @@ class PinnedSSLTest(TestCase):
                     secure_client_socket.connect((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "unable to get local issuer certificate (_ssl.c:1129)"
+            "unable to get local issuer certificate ("
         )
-        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+        self.assertEqual(ec.exception.args, (1, ANY))
+        self.assertEqual(ec.exception.args[1][:100], expected_ssl_error_str)
 
     @start_worker_thread
     def test_context_that_connects_with_incorrect_checksum_will_fail(self):
@@ -189,9 +192,10 @@ class PinnedSSLTest(TestCase):
                     secure_client_socket.connect((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
+            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. ("
         )
-        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+        self.assertEqual(ec.exception.args, (1, ANY))
+        self.assertEqual(ec.exception.args[1][:130], expected_ssl_error_str)
 
     @start_worker_thread
     def test_context_that_connects_with_correct_infos_will_work(self):
@@ -213,9 +217,10 @@ class PinnedSSLTest(TestCase):
                     secure_client_socket.connect_ex((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "unable to get local issuer certificate (_ssl.c:1129)"
+            "unable to get local issuer certificate ("
         )
-        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+        self.assertEqual(ec.exception.args, (1, ANY))
+        self.assertEqual(ec.exception.args[1][:100], expected_ssl_error_str)
 
     @start_worker_thread
     def test_context_that_connects_ex_with_incorrect_checksum_will_fail(self):
@@ -237,9 +242,10 @@ class PinnedSSLTest(TestCase):
                     secure_client_socket.connect_ex((HOST, PORT))
         expected_ssl_error_str = (
             "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
-            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. (_ssl.c:1129)"
+            "Hostname mismatch, certificate is not valid for 'wrong.c4ffein.dev'. ("
         )
-        self.assertEqual(ec.exception.args, (1, expected_ssl_error_str))
+        self.assertEqual(ec.exception.args, (1, ANY))
+        self.assertEqual(ec.exception.args[1][:130], expected_ssl_error_str)
 
     @start_worker_thread
     def test_context_that_connects_ex_with_correct_infos_will_work(self):

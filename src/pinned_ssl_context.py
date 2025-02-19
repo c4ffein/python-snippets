@@ -17,11 +17,11 @@ from sys import flags as sys_flags
 
 def make_pinned_ssl_context(pinned_sha_256):
     """
+    Returns an instance of a subclass of SSLContext that uses a subclass of SSLSocket
+    that actually verifies the sha256 of the certificate during the TLS handshake
     Tested with `python-version: [3.8, 3.9, 3.10, 3.11, 3.12, 3.13]`
+    Original code can be found at https://github.com/c4ffein/python-snippets
     """
-    # TODO Document
-    # TODO Explain can be found here
-    # TODO Copy
     class PinnedSSLSocket(SSLSocket):
         def check_pinned_cert(self):
             der_cert_bin = self.getpeercert(True)

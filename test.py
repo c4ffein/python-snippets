@@ -1,20 +1,5 @@
-from socket import socketpair, create_connection
-from unittest import TestCase, mock
-from unittest import main as unittest_main
-from unittest.mock import patch
-from time import sleep
-from ssl import SSLError, wrap_socket
-import socket
-import sys
-from threading import Thread
-
-from src.pinned_ssl_context import make_pinned_ssl_context
-
-HOST, PORT = "localhost", 8888
-
-
-# TODO : Next doc better
 """
+How to create the certificates for testing:
 - Create a Self-Signed Root Certificate Authority (CA)
   ```
   openssl req -x509 -newkey rsa:4096 -keyout root_ca.key -out root_ca.crt -days 3650 -nodes \
@@ -33,6 +18,21 @@ HOST, PORT = "localhost", 8888
   - client: use `root_ca.crt`
   - server: use `server.crt` and `server.key`
 """
+
+
+from socket import socketpair, create_connection
+from unittest import TestCase, mock
+from unittest import main as unittest_main
+from unittest.mock import patch
+from time import sleep
+from ssl import SSLError, wrap_socket
+import socket
+import sys
+from threading import Thread
+
+from src.pinned_ssl_context import make_pinned_ssl_context
+
+HOST, PORT = "localhost", 8888
 
 
 def start_worker_thread(func):

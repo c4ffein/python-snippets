@@ -20,7 +20,7 @@ How to create the certificates for testing:
 """
 
 import socket
-from ssl import SSLError, wrap_socket
+from ssl import SSLContext, SSLError
 from threading import Thread
 from time import sleep
 from unittest import TestCase
@@ -57,16 +57,15 @@ def start_worker_thread(func):
             while True:
                 if end_of_worker_asked:
                     break
+                ssl_context = SSLContext()
+                ssl_context.load_cert_chain(certfile="certs/server.crt", keyfile="certs/server.key")
                 try:
                     conn, addr = sock.accept()
                 except socket.timeout:
                     break
                 try:
-                    secure_conn = wrap_socket(
-                        conn, certfile="certs/server.crt", keyfile="certs/server.key", server_side=True
-                    )
-                    handle_secure_connection(secure_conn)
-                    secure_conn.close()
+                    with ssl_context.wrap_socket(conn, server_side=True) as secure_conn:
+                        handle_secure_connection(secure_conn)
                 except socket.timeout:
                     secure_conn.close()  # May be useless for now
                 except SSLError as e:

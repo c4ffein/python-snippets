@@ -66,4 +66,5 @@ line-length = 120
 
 [tool.ruff.lint.per-file-ignores]
 "test.py" = ["C901"]  # No complexity check
+"src/multi_part_form" = ["C901", "E731"]  # No complexity check, allow lambda definition
 "src/pinned_ssl_context.py" = ["C901"]  # No complexity check

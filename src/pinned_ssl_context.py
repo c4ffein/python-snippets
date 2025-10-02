@@ -15,7 +15,7 @@ from ssl import (
 from sys import flags as sys_flags
 
 
-def make_pinned_ssl_context(pinned_sha_256):
+def make_pinned_ssl_context(pinned_sha_256, cafile=None, capath=None, cadata=None):
     """
     Returns an instance of a subclass of SSLContext that uses a subclass of SSLSocket
     that actually verifies the sha256 of the certificate during the TLS handshake
@@ -37,7 +37,7 @@ def make_pinned_ssl_context(pinned_sha_256):
     class PinnedSSLContext(SSLContext):
         sslsocket_class = PinnedSSLSocket
 
-    def create_pinned_default_context(purpose=Purpose.SERVER_AUTH, *, cafile=None, capath=None, cadata=None):
+    def create_pinned_default_context(purpose=Purpose.SERVER_AUTH):
         if not isinstance(purpose, _ASN1Object):
             raise TypeError(purpose)
         if purpose == Purpose.SERVER_AUTH:  # Verify certs and host name in client mode

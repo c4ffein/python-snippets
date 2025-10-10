@@ -5,7 +5,11 @@ from os import urandom
 
 
 class MultiPartForm:
-    # TODO : Clean and document
+    """
+    Simple multipart/form-data encoder for file uploads.
+    Original code can be found at https://github.com/c4ffein/python-snippets
+    """
+
     def __init__(self):
         self.form_fields = []
         self.files = []

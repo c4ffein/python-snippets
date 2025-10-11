@@ -20,7 +20,7 @@ class MultiPartForm:
 
     def add_file(self, field_name, file_name, file_handle, mimetype=None):
         body = file_handle.read()
-        mimetype = (mimetypes.guess_type(file_name)[0] or "application/octet-stream") if mimetype is None else mimetypes
+        mimetype = (mimetypes.guess_type(file_name)[0] or "application/octet-stream") if mimetype is None else mimetype
         self.files.append((field_name, file_name, mimetype, body))
 
     def __bytes__(self):

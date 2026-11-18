@@ -19,14 +19,17 @@ def make_pinned_ssl_context(pinned_sha_256, cafile=None, capath=None, cadata=Non
     """
     Returns an instance of a subclass of SSLContext that uses a subclass of SSLSocket
     that actually verifies the sha256 of the certificate during the TLS handshake
+    pinned_sha_256 is a hex digest, or several of them: any is accepted (certificates overlap during a rotation)
     Tested with `python-version: [3.8, 3.9, 3.10, 3.11, 3.12, 3.13]`
     Original code can be found at https://github.com/c4ffein/python-snippets
     """
 
+    pinned = frozenset((pinned_sha_256,) if isinstance(pinned_sha_256, str) else pinned_sha_256)
+
     class PinnedSSLSocket(SSLSocket):
         def check_pinned_cert(self):
             der_cert_bin = self.getpeercert(True)
-            if sha256(der_cert_bin).hexdigest() != pinned_sha_256:
+            if sha256(der_cert_bin).hexdigest() not in pinned:
                 raise SSLCertVerificationError("Incorrect certificate checksum")
 
         def do_handshake(self, *args, **kwargs):
